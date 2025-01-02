@@ -174,4 +174,4 @@ cython_debug/
 ### PROJECT SPECIFICS
 
 bike_data/
-clean_data/
+gothenburg/
