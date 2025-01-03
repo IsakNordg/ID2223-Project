@@ -1,0 +1,12 @@
+hopsworks
+python-dotenv
+openmeteo-requests
+xgboost==2.0.3
+scikit-learn==1.4.1.post1
+matplotlib==3.8.3
+pandas
+gitpython
+requests-cache==1.2.0
+retry-requests==2.0.0
+geopy==2.4.1
+great-expectations
