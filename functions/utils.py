@@ -33,7 +33,7 @@ def get_historical_weather(city, start_date, end_date):
         "start_date": start_date,
         "end_date": end_date,
     	    "hourly": ["temperature_2m", "apparent_temperature", "rain", "snowfall", "snow_depth", "wind_speed_10m"],
-    	"daily": "sunshine_duration"
+    	"daily": ["sunshine_duration", "daylight_duration", "rain_sum"]
     }
     responses = openmeteo.weather_api(url, params=params)
 
@@ -71,6 +71,8 @@ def get_historical_weather(city, start_date, end_date):
     # Process daily data. The order of variables needs to be the same as requested.
     daily = response.Daily()
     daily_sunshine_duration = daily.Variables(0).ValuesAsNumpy()
+    daily_daylight_duration = daily.Variables(1).ValuesAsNumpy()
+    daily_rain_sum = daily.Variables(2).ValuesAsNumpy()
 
     daily_data = {"date": pd.date_range(
     	start = pd.to_datetime(daily.Time(), unit = "s", utc = True),
@@ -79,6 +81,8 @@ def get_historical_weather(city, start_date, end_date):
     	inclusive = "left"
     )}
     daily_data["sunshine_duration"] = daily_sunshine_duration
+    daily_data["daylight_duration"] = daily_daylight_duration
+    daily_data["rain_sum"] = daily_rain_sum
 
     daily_dataframe = pd.DataFrame(data = daily_data)
     daily_dataframe['city'] = city
