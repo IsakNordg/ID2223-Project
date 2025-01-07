@@ -106,7 +106,7 @@ def get_city_coordinates(city_name: str):
 
     return latitude, longitude
 
-def secrets_api():
+def secrets_api(project):
     try:
         api_key = os.environ.get('HOPSWORKS_API_KEY')
         if not api_key:
@@ -114,9 +114,9 @@ def secrets_api():
     except ValueError:
         load_dotenv()
         api_key = os.environ.get('HOPSWORKS_API_KEY')
-    project = hopsworks.login(api_key_value=api_key)
-    connection = hopsworks.connection(api_key_value=api_key, host="c.app.hopsworks.ai")
+    connection = hopsworks.connection(api_key_value=api_key, host="c.app.hopsworks.ai", project=project)
     return connection.get_secrets_api()
+
 
 
 def get_hourly_weather_forecast(city):
