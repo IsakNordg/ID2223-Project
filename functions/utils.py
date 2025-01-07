@@ -8,12 +8,16 @@ from geopy.geocoders import Nominatim
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 from matplotlib.ticker import MultipleLocator
+from matplotlib.dates import DateFormatter
 import openmeteo_requests
 import requests_cache
 from retry_requests import retry
 import hopsworks
 import hsfs
 from pathlib import Path
+from matplotlib.dates import AutoDateLocator, DateFormatter
+from matplotlib.ticker import MaxNLocator
+
 
 features = {
     "hourly": ["temperature_2m", "apparent_temperature", "rain", "snowfall", "wind_speed_10m"],
@@ -106,6 +110,7 @@ def get_city_coordinates(city_name: str):
 
     return latitude, longitude
 
+
 def secrets_api(project):
     try:
         api_key = os.environ.get('HOPSWORKS_API_KEY')
@@ -116,7 +121,6 @@ def secrets_api(project):
         api_key = os.environ.get('HOPSWORKS_API_KEY')
     connection = hopsworks.connection(api_key_value=api_key, host="c.app.hopsworks.ai", project=project)
     return connection.get_secrets_api()
-
 
 
 def get_hourly_weather_forecast(city):
@@ -192,3 +196,44 @@ def get_hourly_weather_forecast(city):
     hourly_dataframe['date_only'] = pd.to_datetime(hourly_dataframe['date_only'])
     df = hourly_dataframe.merge(daily_dataframe, left_on='date_only', right_on='date', how='left')
     return df
+    
+def plot_bike_availability_forecast(city: str, station_1: str, station_2: str, df: pd.DataFrame, file_path: str, hindcast=False):
+    
+    fig, ax = plt.subplots(figsize=(14, 6))
+
+    datetime = pd.to_datetime(df['datetime'])
+    # Plot each column separately in matplotlib
+    ax.plot(datetime, df['bikes_available_stn_1'], label=f'Predicted number of bikes available at {station_1}', 
+            color='red', linewidth=2, marker='o', markersize=5, markerfacecolor='blue')
+    ax.plot(datetime, df['bikes_available_stn_2'], label=f'Predicted number of bikes available at {station_2}', 
+            color='blue', linewidth=2, marker='o', markersize=5, markerfacecolor='red')
+
+    # Set the y-axis to a linear scale
+    ax.set_yticks([0, 10, 20, 30, 40, 50])
+    ax.get_yaxis().set_major_formatter(plt.ScalarFormatter())
+    ax.set_ylim(bottom=1)
+
+    # Set the labels and title
+    ax.set_xlabel('Date and Time')
+    ax.set_title(f"Predicted number of bikes available for {city}, {station_1} and {station_2}")
+    ax.set_ylabel('Number of bikes available')
+
+    # Use AutoDateLocator and MaxNLocator for denser labels
+    locator = AutoDateLocator()
+    ax.xaxis.set_major_locator(locator)
+    ax.xaxis.set_major_locator(MaxNLocator(nbins=20))  # Increase the number of ticks
+
+    ax.xaxis.set_major_formatter(DateFormatter('%d %b %H:%M'))
+    plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')  # Rotate for readability
+
+    if hindcast:
+        ax.plot(datetime, df['num_bikes_available'], label='Actual number of bikes available', 
+                color='black', linewidth=2, marker='^', markersize=5, markerfacecolor='grey')
+        ax.legend(loc='upper left', fontsize='x-small')
+
+    # Ensure everything is laid out neatly
+    plt.tight_layout()
+
+    # Save the figure
+    plt.savefig(file_path)
+    return plt
