@@ -15,6 +15,11 @@ import hopsworks
 import hsfs
 from pathlib import Path
 
+features = {
+    "hourly": ["temperature_2m", "apparent_temperature", "rain", "snowfall", "wind_speed_10m"],
+    "daily": ["daylight_duration", "rain_sum"]
+}
+
 
 def get_historical_weather(city, start_date, end_date):
     latitude, longitude = get_city_coordinates(city)
@@ -32,9 +37,8 @@ def get_historical_weather(city, start_date, end_date):
         "longitude": longitude,
         "start_date": start_date,
         "end_date": end_date,
-    	    "hourly": ["temperature_2m", "apparent_temperature", "rain", "snowfall", "snow_depth", "wind_speed_10m"],
-    	"daily": ["sunshine_duration", "daylight_duration", "rain_sum"]
     }
+    params.update(features)
     responses = openmeteo.weather_api(url, params=params)
 
     # Process first location. Add a for-loop for multiple locations or weather models
@@ -50,8 +54,7 @@ def get_historical_weather(city, start_date, end_date):
     hourly_apparent_temperature = hourly.Variables(1).ValuesAsNumpy()
     hourly_rain = hourly.Variables(2).ValuesAsNumpy()
     hourly_snowfall = hourly.Variables(3).ValuesAsNumpy()
-    hourly_snow_depth = hourly.Variables(4).ValuesAsNumpy()
-    hourly_wind_speed_10m = hourly.Variables(5).ValuesAsNumpy()
+    hourly_wind_speed_10m = hourly.Variables(4).ValuesAsNumpy()
 
     hourly_data = {"date": pd.date_range(
     	start = pd.to_datetime(hourly.Time(), unit = "s", utc = True),
@@ -63,16 +66,14 @@ def get_historical_weather(city, start_date, end_date):
     hourly_data["apparent_temperature"] = hourly_apparent_temperature
     hourly_data["rain"] = hourly_rain
     hourly_data["snowfall"] = hourly_snowfall
-    hourly_data["snow_depth"] = hourly_snow_depth
     hourly_data["wind_speed_10m"] = hourly_wind_speed_10m
 
     hourly_dataframe = pd.DataFrame(data = hourly_data)
     
     # Process daily data. The order of variables needs to be the same as requested.
     daily = response.Daily()
-    daily_sunshine_duration = daily.Variables(0).ValuesAsNumpy()
-    daily_daylight_duration = daily.Variables(1).ValuesAsNumpy()
-    daily_rain_sum = daily.Variables(2).ValuesAsNumpy()
+    daily_daylight_duration = daily.Variables(0).ValuesAsNumpy()
+    daily_rain_sum = daily.Variables(1).ValuesAsNumpy()
 
     daily_data = {"date": pd.date_range(
     	start = pd.to_datetime(daily.Time(), unit = "s", utc = True),
@@ -80,7 +81,6 @@ def get_historical_weather(city, start_date, end_date):
     	freq = pd.Timedelta(seconds = daily.Interval()),
     	inclusive = "left"
     )}
-    daily_data["sunshine_duration"] = daily_sunshine_duration
     daily_data["daylight_duration"] = daily_daylight_duration
     daily_data["rain_sum"] = daily_rain_sum
 
@@ -106,13 +106,89 @@ def get_city_coordinates(city_name: str):
 
     return latitude, longitude
 
-def secrets_api(proj):
-    host = "c.app.hopsworks.ai"
+def secrets_api():
     try:
         api_key = os.environ.get('HOPSWORKS_API_KEY')
-    except: # edited
-        from dotenv import load_dotenv
+        if not api_key:
+            raise ValueError("API key not found in environment variables.")
+    except ValueError:
         load_dotenv()
         api_key = os.environ.get('HOPSWORKS_API_KEY')
-    conn = hopsworks.connection(host=host, project=proj, api_key_value=api_key)
-    return conn.get_secrets_api()
+    project = hopsworks.login(api_key_value=api_key)
+    connection = hopsworks.connection(api_key_value=api_key, host="c.app.hopsworks.ai")
+    return connection.get_secrets_api()
+
+
+def get_hourly_weather_forecast(city):
+
+    latitude, longitude = get_city_coordinates(city)
+
+    # Setup the Open-Meteo API client with cache and retry on error
+    cache_session = requests_cache.CachedSession('.cache', expire_after = 3600)
+    retry_session = retry(cache_session, retries = 5, backoff_factor = 0.2)
+    openmeteo = openmeteo_requests.Client(session = retry_session)
+
+    # Make sure all required weather variables are listed here
+    # The order of variables in hourly or daily is important to assign them correctly below
+    url = "https://api.open-meteo.com/v1/ecmwf"
+    params = {
+        "latitude": latitude,
+        "longitude": longitude,
+    }
+    params.update(features)
+    print("features:", features)
+    print("params:", params)
+    responses = openmeteo.weather_api(url, params=params)
+
+    # Process first location. Add a for-loop for multiple locations or weather models
+    response = responses[0]
+    print(f"Coordinates {response.Latitude()}°N {response.Longitude()}°E")
+    print(f"Elevation {response.Elevation()} m asl")
+    print(f"Timezone {response.Timezone()} {response.TimezoneAbbreviation()}")
+    print(f"Timezone difference to GMT+0 {response.UtcOffsetSeconds()} s")
+
+    # Process hourly data. The order of variables needs to be the same as requested.
+
+    hourly = response.Hourly()
+    hourly_temperature_2m = hourly.Variables(0).ValuesAsNumpy()
+    hourly_apparent_temperature = hourly.Variables(1).ValuesAsNumpy()
+    hourly_rain = hourly.Variables(2).ValuesAsNumpy()
+    hourly_snowfall = hourly.Variables(3).ValuesAsNumpy()
+    hourly_wind_speed_10m = hourly.Variables(4).ValuesAsNumpy()
+
+    hourly_data = {"date": pd.date_range(
+    	start = pd.to_datetime(hourly.Time(), unit = "s", utc = True),
+    	end = pd.to_datetime(hourly.TimeEnd(), unit = "s", utc = True),
+    	freq = pd.Timedelta(seconds = hourly.Interval()),
+    	inclusive = "left"
+    )}
+    hourly_data["temperature_2m"] = hourly_temperature_2m
+    hourly_data["apparent_temperature"] = hourly_apparent_temperature
+    hourly_data["rain"] = hourly_rain
+    hourly_data["snowfall"] = hourly_snowfall
+    hourly_data["wind_speed_10m"] = hourly_wind_speed_10m
+
+    hourly_dataframe = pd.DataFrame(data = hourly_data)
+    
+    # Process daily data. The order of variables needs to be the same as requested.
+    daily = response.Daily()
+    daily_daylight_duration = daily.Variables(0).ValuesAsNumpy()
+    daily_rain_sum = daily.Variables(1).ValuesAsNumpy()
+
+    daily_data = {"date": pd.date_range(
+    	start = pd.to_datetime(daily.Time(), unit = "s", utc = True),
+    	end = pd.to_datetime(daily.TimeEnd(), unit = "s", utc = True),
+    	freq = pd.Timedelta(seconds = daily.Interval()),
+    	inclusive = "left"
+    )}
+    daily_data["daylight_duration"] = daily_daylight_duration
+    daily_data["rain_sum"] = daily_rain_sum
+
+    daily_dataframe = pd.DataFrame(data = daily_data)
+    daily_dataframe['city'] = city
+
+    # Extract the date from the 'datetime' column to be able to merge
+    hourly_dataframe['date_only'] = hourly_dataframe['date'].dt.strftime('%Y-%m-%d 00:00:00+00:00')
+    hourly_dataframe['date_only'] = pd.to_datetime(hourly_dataframe['date_only'])
+    df = hourly_dataframe.merge(daily_dataframe, left_on='date_only', right_on='date', how='left')
+    return df
