@@ -80,3 +80,9 @@ Run the notebooks in their given orders. The notebooks are designed to be run in
 #### 5. Check the results
 
 After running the notebooks, you can check the predictions in the inference notebook!
+
+#### 6. Set up the daily pipeline
+
+The daily pipeline can (on Windows) be set up using the Task Scheduler. You can create a new task that runs bike-availability-dayly.bat every day at a given time. The bat file runs the notebooks and pushes the results to GitHub.
+
+Note that you need to change the path to conda in the bat file to the path on your machine.
