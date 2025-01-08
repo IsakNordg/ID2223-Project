@@ -1,9 +1,5 @@
 # Bike Availability Dashboard
 
-{% include air-quality.html %}
-
-test!
-
 ![Forecast](./bike_availability_forecast.png)
 
 # Model Performance Monitoring
