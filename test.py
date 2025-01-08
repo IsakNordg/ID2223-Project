@@ -1,19 +1,12 @@
 import hopsworks
-# from hopsworks import SecretsApi
-from functions import utils
-import os
-import json
 
-from dotenv import load_dotenv
-load_dotenv()
-HOPSWORKS_API_KEY = os.getenv("HOPSWORKS_API_KEY")
-os.environ["HOPSWORKS_API_KEY"] = HOPSWORKS_API_KEY
+# connect with Hopsworks
+project = hopsworks.login()
 
-project = hopsworks.login(api_key_value=HOPSWORKS_API_KEY)
-fs = project.get_feature_store() 
+# get Hopsworks Model Registry
+mr = project.get_model_registry()
 
-connection = hopsworks.connection(api_key_value=HOPSWORKS_API_KEY, host="c.app.hopsworks.ai")
-secrets_api = connection.get_secrets_api()
+# get model object
+model = mr.get_model("bike_availability_xgboost_model_1", version=1)
 
-json_data = json.loads(secrets_api.get_secret("time_secrets").value)
-
+model.delete()

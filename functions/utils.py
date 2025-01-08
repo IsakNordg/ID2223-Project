@@ -197,16 +197,14 @@ def get_hourly_weather_forecast(city):
     df = hourly_dataframe.merge(daily_dataframe, left_on='date_only', right_on='date', how='left')
     return df
     
-def plot_bike_availability_forecast(city: str, station_1: str, station_2: str, df: pd.DataFrame, file_path: str, hindcast=False):
+def plot_bike_availability_forecast(city: str, station: str, df: pd.DataFrame, file_path: str, hindcast=False):
     
     fig, ax = plt.subplots(figsize=(14, 6))
 
     datetime = pd.to_datetime(df['datetime'])
     # Plot each column separately in matplotlib
-    ax.plot(datetime, df['bikes_available_stn_1'], label=f'Predicted number of bikes available at {station_1}', 
+    ax.plot(datetime, df['predicted_bikes_available'], label=f'Predicted number of bikes available at {station}', 
             color='red', linewidth=2, marker='o', markersize=5, markerfacecolor='blue')
-    ax.plot(datetime, df['bikes_available_stn_2'], label=f'Predicted number of bikes available at {station_2}', 
-            color='blue', linewidth=2, marker='o', markersize=5, markerfacecolor='red')
 
     # Set the y-axis to a linear scale
     ax.set_yticks([0, 10, 20, 30, 40, 50])
@@ -215,7 +213,7 @@ def plot_bike_availability_forecast(city: str, station_1: str, station_2: str, d
 
     # Set the labels and title
     ax.set_xlabel('Date and Time')
-    ax.set_title(f"Predicted number of bikes available for {city}, {station_1} and {station_2}")
+    ax.set_title(f"Predicted number of bikes available for {city}, {station}")
     ax.set_ylabel('Number of bikes available')
 
     # Use AutoDateLocator and MaxNLocator for denser labels
@@ -226,6 +224,7 @@ def plot_bike_availability_forecast(city: str, station_1: str, station_2: str, d
     ax.xaxis.set_major_formatter(DateFormatter('%d %b %H:%M'))
     plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')  # Rotate for readability
 
+    
     if hindcast:
         ax.plot(datetime, df['num_bikes_available'], label='Actual number of bikes available', 
                 color='black', linewidth=2, marker='^', markersize=5, markerfacecolor='grey')
