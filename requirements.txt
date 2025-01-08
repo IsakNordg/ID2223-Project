@@ -1,5 +1,5 @@
 # Feature store and model registry
-hopsworks==3.9
+hopsworks
 
 # Resolve city names from (longitude, latitude) coordinates
 geopy==2.4.1
