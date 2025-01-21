@@ -10,6 +10,8 @@ The dataset used for this project is the [bike-sharing-history dataset by MaxHal
 
 To ensure the model is trained on consistent and manageable data, I pick out only one data point per hour. This is done in hopes of reducing the noise and variability in the data, making the model more robust and efficient.
 
+Originally, I planned to use data from Gothenburg to train the model, but that dataset did not contain a full year of data, and since I wanted to use features depending on the time of year, I decided to use Dublin data instead. In all other aspects, the model is the same as the one I would have trained on Gothenburg data. 
+
 ## Methodology and Algorithm
 
 1. **Data Extraction**: The notebook `1. git_to_csv.ipynb` extracts bike-sharing data from the GitHub repository by looping through the commits and then converts it into CSV files. This is done so that one does not need to download the data each time they want to rerun the pipeline (which is mostly useful in debugging situations). Extracting about one year of data takes approximately 30 to 40 minutes.
