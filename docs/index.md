@@ -6,4 +6,4 @@
 
 Predictions vs Outcomes for predictions one day ahead.
 
-![Hindcast](./bike_availability_hindcast_1day.png)
+![Hindcast](./bike_availability_hindcast_10days.png)

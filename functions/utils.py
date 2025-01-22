@@ -216,6 +216,11 @@ def plot_bike_availability_forecast(city: str, station: str, df: pd.DataFrame, f
     ax.set_title(f"Predicted number of bikes available for {city}, {station}")
     ax.set_ylabel('Number of bikes available')
 
+    # Limit the x-axis to the latest 10 days
+    # latest_date = datetime.max()
+    # ten_days_ago = latest_date - pd.Timedelta(days=10)
+    # ax.set_xlim(ten_days_ago, latest_date)
+
     # Use AutoDateLocator and MaxNLocator for denser labels
     locator = AutoDateLocator()
     ax.xaxis.set_major_locator(locator)
