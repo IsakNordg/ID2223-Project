@@ -38,7 +38,7 @@ The model was then used to make predictions on the latest data, and the results 
 
 ### Hindcast
 
-![Hindcast](docs\bike_availability_hindcast_1day.png)
+![Hindcast](docs\bike_availability_hindcast_10days.png)
 
 
 ## Changing the city and expanding to multiple stations
